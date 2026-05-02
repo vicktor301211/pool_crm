@@ -6,19 +6,22 @@ from datetime import datetime, time, date, timedelta
 
 
 def table_exists(cursor, table_name):
+    # Проверяет, существует ли таблица в базе данных SQLite
     """Проверяет, существует ли таблица в базе данных"""
-    cursor.execute(
+    cursor.execute(  #   cursor - курсор SQLite для выполнения запросов
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        (table_name,)
+        # Обращаемся к системной таблице sqlite_master, где хранится информация о всех объектах БД
+        # type='table' - фильтруем только таблицы (исключаем индексы, представления и триггеры)
+        # name=? - параметризованный запрос для защиты от SQL-инъекций
+        (table_name,)  #   table_name - имя таблицы для проверки (строка)
     )
-    return cursor.fetchone() is not None
-
+    return cursor.fetchone() is not None #True - если таблица существует, False - если таблица не найдена
 
 def create_tables():
     """Создание всех таблиц согласно схеме"""
 
     with get_db_cursor() as cursor:
-        # 1. Таблица родителей
+        # 1. Таблица родителей (parents)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS parents ( 
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,9 +32,15 @@ def create_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """) #id: Уникальный идентификатор родителя
+             #full_name: Полное имя родителя (Фамилия Имя Отчество)
+             #phone: Номер телефона родителя
+             #email: Электронная почта родителя
+             #vk_id: Идентификатор пользователя ВКонтакте
+             #created_at: Дата и время создания записи
+             #updated_at: Дата и время последнего обновления записи
 
-        # 2. Таблица детей
+        # 2. Таблица детей (children)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS children (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,9 +54,17 @@ def create_tables():
                 desired_lessons_per_week INTEGER CHECK (desired_lessons_per_week IN (1,2,3)),
                 FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE
             )
-        """)
+        """)    #id: Уникальный идентификатор ребёнка
+                #parent_id: Внешний ключ, ссылается на родителя
+                #full_name: Полное имя ребёнка
+                #age: Возраст ребёнка
+                #class_number: Номер класса в школе
+                #school_name: Название школы или детского сада
+                #swimming_years: Год обучения плаванию
+                #shift: Смена занятий (день или вечер)
+                #desired_lessons_per_week: Желаемое количество занятий в неделю
 
-        # 3. Таблица тренеров
+        # 3. Таблица тренеров (trainers)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS trainers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,9 +77,17 @@ def create_tables():
                 is_active BOOLEAN DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """)    #id: Уникальный идентификатор тренера
+                #full_name: Полное имя тренера (Фамилия Имя Отчество)
+                #phone: Контактный телефон тренера
+                #email: Электронная почта тренера
+                #login: Уникальное имя пользователя для входа в систему
+                #password_hash: Хеш пароля (НЕ САМ ПАРОЛЬ!)
+                #specialization: Специализация тренера
+                #is_active: Статус активности тренера
+                #created_at: Дата и время создания записи
 
-        # 4. Таблица групп
+        # 4. Таблица групп (groups)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS groups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,9 +101,17 @@ def create_tables():
                 is_active BOOLEAN DEFAULT 1,
                 FOREIGN KEY (trainer_id) REFERENCES trainers(id) ON DELETE SET NULL
             )
-        """)
+        """)    #id: Уникальный идентификатор группы
+                #name: Название группы (отображается для родителей и тренеров)
+                #trainer_id: Внешний ключ, ссылается на тренера группы
+                #min_age: Минимальный возраст для зачисления в группу
+                #max_age: Максимальный возраст для зачисления в группу
+                #swimming_year: Год обучения (уровень подготовки)
+                #max_students: Максимальное количество учеников в группе
+                #shift: Смена занятий (день или вечер)
+                #is_active: Статус активности группы
 
-        # 5. Таблица зачислений
+        # 5. Таблица зачислений (enrollments)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS enrollments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,9 +123,13 @@ def create_tables():
                 FOREIGN KEY (child_id) REFERENCES children(id),
                 FOREIGN KEY (group_id) REFERENCES groups(id)
             )
-        """)
+        """)    #id: Уникальный идентификатор записи о зачислении
+                #child_id: Внешний ключ, ссылается на ребёнка
+                #group_id: Внешний ключ, ссылается на группу
+                #enrolled_at: Дата и время зачисления
+                #is_active: Статус активности зачисления
 
-        # 6. Таблица расписания
+        # 6. Таблица расписания (schedule)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS schedule (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,9 +142,16 @@ def create_tables():
                 single_date DATE,
                 FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
             )
-        """)
+        """)    #id: Уникальный идентификатор записи расписания
+                #group_id: Внешний ключ, ссылается на группу
+                #weekday: День недели (для регулярных занятий)
+                #start_time: Время начала занятия
+                #end_time: Время окончания занятия
+                #location: Место проведения (дорожка, чаша бассейна)
+                #is_recurring: Флаг регулярности занятия
+                #single_date: Конкретная дата для разового занятия
 
-        # 7. Таблица посещаемости
+        # 7. Таблица посещаемости(attendance)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,9 +162,13 @@ def create_tables():
                 FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE,
                 UNIQUE(enrollment_id, date)
             )
-        """)
+        """)    #id: Уникальный идентификатор записи посещаемости
+                #enrollment_id: Внешний ключ, ссылается на зачисление
+                #date: Дата занятия
+                #status: Статус посещения
+                #mark_time: Время проставления отметки
 
-        # 8. Таблица заявок
+        # 8. Таблица заявок (applications)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS applications (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,9 +189,24 @@ def create_tables():
                 processed_by INTEGER,
                 FOREIGN KEY (processed_by) REFERENCES trainers(id)
             )
-        """)
+        """)    #id: Уникальный идентификатор заявки
+                #parent_full_name: Полное имя родителя (из формы заявки)
+                #parent_phone: Телефон родителя (из формы заявки)
+                #parent_email: Email родителя (из формы заявки)
+                #child_full_name: Полное имя ребёнка
+                #child_age: Возраст ребёнка на момент подачи заявки
+                #child_class: Класс в школе (если есть)
+                #school_name: Название школы или детского сада
+                #swimming_years: Год обучения плаванию
+                #shift: Предпочитаемая смена занятий
+                #desired_lessons_per_week: Желаемое количество занятий в неделю
+                #status: Статус обработки заявки
+                #rejection_reason: Причина отклонения заявки
+                #created_at: Дата и время подачи заявки
+                #processed_at: Дата и время обработки заявки
+                #processed_by: Кто обработал заявку (ID администратора/тренера)
 
-        # 9. Таблица логов администратора
+        # 9. Таблица логов администратора (admin_logs)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS admin_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -155,9 +218,15 @@ def create_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (admin_id) REFERENCES trainers(id)
             )
-        """)
+        """)    #id: Уникальный идентификатор записи лога
+                #admin_id: ID администратора, который совершил действие
+                #action: Описание действия (что сделал администратор)
+                #entity_type: Тип объекта, над которым совершено действие
+                #entity_id: ID объекта, над которым совершено действие
+                #details: Детальное описание изменений (JSON или текст)
+                #created_at: Дата и время совершения действия
 
-        # 10. Таблица уведомлений
+        # 10. Таблица уведомлений (notifications)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -170,7 +239,15 @@ def create_tables():
                 sent_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """)    #id: Уникальный идентификатор уведомления
+                #user_id: ID пользователя, кому отправлено уведомление
+                #user_type: Тип пользователя (роль в системе)
+                #type: #Канал отправки уведомления
+                #title: Заголовок уведомления
+                #message: Текст уведомления (основной контент)
+                #status: Статус доставки уведомления
+                #sent_at: Дата и время фактической отправки
+                #created_at: Дата и время создания уведомления
 
         # Создание индексов для производительности
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_children_parent ON children(parent_id)")
