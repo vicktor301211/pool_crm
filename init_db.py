@@ -5,6 +5,15 @@ from database import db_instance, get_db_cursor, DATABASE_PATH
 from datetime import datetime, time, date, timedelta
 
 
+def table_exists(cursor, table_name):
+    """Проверяет, существует ли таблица в базе данных"""
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,)
+    )
+    return cursor.fetchone() is not None
+
+
 def create_tables():
     """Создание всех таблиц согласно схеме"""
 
@@ -178,16 +187,38 @@ def create_tables():
         print("✅ All tables created successfully")
 
 
+def ensure_tables_exist():
+    """Проверяет существование таблиц и создаёт их при необходимости"""
+    with get_db_cursor() as cursor:
+        if not table_exists(cursor, 'trainers'):
+            print("📋 Tables not found, creating them first...")
+            create_tables()
+            return True
+    return False
+
+
 def seed_test_data():
     """Заполнение тестовыми данными для разработки"""
 
+    # Проверяем, существуют ли таблицы
+    ensure_tables_exist()
+
     with get_db_cursor() as cursor:
         # Проверяем, есть ли уже данные
-        cursor.execute("SELECT COUNT(*) FROM trainers")
-        count = cursor.fetchone()[0]
-        if count > 0:
-            print("📊 Test data already exists, skipping seed")
-            return
+        try:
+            cursor.execute("SELECT COUNT(*) FROM trainers")
+            count = cursor.fetchone()[0]
+            if count > 0:
+                print("📊 Test data already exists, skipping seed")
+                return
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e):
+                print("❌ Tables still don't exist, cannot seed data")
+                print("   Please run 'create_tables()' first or use 'reset_database()'")
+                return
+            raise e
+
+        print("🌱 Seeding test data...")
 
         # Хеш пароля для тестовых пользователей (пароль: "password123")
         # В реальном проекте используйте bcrypt!
@@ -450,6 +481,17 @@ def get_database_info():
     print("=" * 40)
 
 
+def create_full_database():
+    """
+    Создаёт полную базу данных с таблицами и тестовыми данными
+    (удобная функция для быстрого старта)
+    """
+    print("🚀 Creating full database...")
+    create_tables()
+    seed_test_data()
+    print("✅ Full database created successfully!")
+
+
 # Если запускаем файл напрямую
 if __name__ == "__main__":
     import sys
@@ -458,13 +500,14 @@ if __name__ == "__main__":
         print("\n📚 Database Management Script")
         print("=" * 40)
         print("Usage:")
-        print("  python init_db.py create    - Create tables")
-        print("  python init_db.py seed      - Seed test data")
-        print("  python init_db.py reset     - Reset database (drop + create + seed)")
-        print("  python init_db.py drop      - Drop all tables")
-        print("  python init_db.py recreate  - Recreate database from scratch")
-        print("  python init_db.py show      - Show all tables")
-        print("  python init_db.py info      - Show database information")
+        print("  python init_db.py create     - Create tables")
+        print("  python init_db.py seed       - Seed test data (auto-creates tables if needed)")
+        print("  python init_db.py reset      - Reset database (drop + create + seed)")
+        print("  python init_db.py drop       - Drop all tables")
+        print("  python init_db.py recreate   - Recreate database from scratch")
+        print("  python init_db.py show       - Show all tables")
+        print("  python init_db.py info       - Show database information")
+        print("  python init_db.py full       - Create full database (tables + data)")
         print("=" * 40)
         sys.exit(0)
 
@@ -484,6 +527,8 @@ if __name__ == "__main__":
         show_tables()
     elif command == "info":
         get_database_info()
+    elif command == "full":
+        create_full_database()
     else:
         print(f"❌ Unknown command: {command}")
-        print("Use: create, seed, reset, drop, recreate, show, info")
+        print("Use: create, seed, reset, drop, recreate, show, info, full")
