@@ -29,7 +29,7 @@ def create_tables():
                 parent_id INTEGER NOT NULL,
                 full_name VARCHAR(255) NOT NULL,
                 age INTEGER CHECK (age BETWEEN 3 AND 17),
-                class_number INTEGER CHECK (class_number BETWEEN 1 AND 11),
+                class_number INTEGER CHECK (class_number BETWEEN 0 AND 11 OR class_number IS NULL),
                 school_name VARCHAR(255),
                 swimming_years INTEGER DEFAULT 1,
                 shift VARCHAR(10) CHECK (shift IN ('day', 'evening')),
