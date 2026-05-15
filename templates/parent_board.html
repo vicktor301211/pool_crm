@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет родителя - АкваСпорт</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">🏊‍♂️ АкваСпорт - {{ parent.full_name }}</div>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+</header>
+
+<main class="main">
+    <div class="dashboard-tabs">
+        <button class="tab-btn active" data-tab="children">👶 Мои дети</button>
+        <button class="tab-btn" data-tab="attendance">📊 Посещаемость</button>
+        <button class="tab-btn" data-tab="progress">📈 Успеваемость</button>
+        <button class="tab-btn" data-tab="schedule">📅 Расписание</button>
+        <button class="tab-btn" data-tab="application">📝 Моя заявка</button>
+    </div>
+
+    <!-- Вкладка: Мои дети -->
+    <div id="children" class="tab-content active">
+        {% for child in children %}
+        <div class="child-card">
+            <h3>{{ child.full_name }}</h3>
+            <div class="child-info-grid">
+                <div class="info-item">
+                    <span class="label">Возраст:</span>
+                    <span class="value">{{ child.age }} лет</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Школа:</span>
+                    <span class="value">{{ child.school_name or 'Не указана' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Класс:</span>
+                    <span class="value">{{ child.class_number or '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Год плавания:</span>
+                    <span class="value">{{ child.swimming_years }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Смена:</span>
+                    <span class="value">{{ 'Дневная' if child.shift == 'day' else 'Вечерняя' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Занятий в неделю:</span>
+                    <span class="value">{{ child.desired_lessons_per_week }}</span>
+                </div>
+                {% if child.group_name %}
+                <div class="info-item">
+                    <span class="label">Группа:</span>
+                    <span class="value">{{ child.group_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Тренер:</span>
+                    <span class="value">{{ child.trainer_name }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>У вас пока нет добавленных детей.</p>
+            <button onclick="showApplicationForm()" class="submit-btn">Подать заявку</button>
+        </div>
+        {% endfor %}
+
+        <div class="parent-contacts">
+            <h3>Контактные данные</h3>
+            <div class="info-item">
+                <span class="label">Телефон:</span>
+                <span class="value">{{ parent.phone }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Email:</span>
+                <span class="value">{{ parent.email or 'Не указан' }}</span>
+            </div>
+            {% if parent.vk_id %}
+            <div class="info-item">
+                <span class="label">VK ID:</span>
+                <span class="value">{{ parent.vk_id }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Вкладка: Посещаемость -->
+    <div id="attendance" class="tab-content">
+        <div class="controls">
+            <select id="childSelect" class="child-select">
+                {% for child in children %}
+                <option value="{{ child.id }}">{{ child.full_name }}</option>
+                {% endfor %}
+            </select>
+            <input type="month" id="monthSelect" value="{{ current_month }}">
+        </div>
+        <div class="attendance-table-container">
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>День недели</th>
+                        <th>Время</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    <tr><td colspan="4">Выберите ребенка и месяц</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="attendance-stats" id="attendanceStats"></div>
+    </div>
+
+    <!-- Вкладка: Успеваемость -->
+    <div id="progress" class="tab-content">
+        <select id="progressChildSelect" class="child-select">
+            {% for child in children %}
+            <option value="{{ child.id }}">{{ child.full_name }}</option>
+            {% endfor %}
+        </select>
+        <div class="progress-container">
+            <div class="progress-chart">
+                <canvas id="progressChart"></canvas>
+            </div>
+            <div class="achievements">
+                <h4>Достижения</h4>
+                <div id="achievementsList" class="achievements-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Расписание -->
+    <div id="schedule" class="tab-content">
+        <select id="scheduleChildSelect" class="child-select">
+            {% for child in children %}
+            <option value="{{ child.id }}">{{ child.full_name }}</option>
+            {% endfor %}
+        </select>
+        <div id="childSchedule" class="schedule-list"></div>
+    </div>
+
+    <!-- Вкладка: Моя заявка -->
+    <div id="application" class="tab-content">
+        {% if application %}
+        <div class="application-card">
+            <h3>Статус заявки:
+                <span class="status-badge status-{{ application.status }}">
+                    {% if application.status == 'new' %}Новая
+                    {% elif application.status == 'processing' %}В обработке
+                    {% elif application.status == 'approved' %}Одобрена
+                    {% elif application.status == 'rejected' %}Отклонена
+                    {% endif %}
+                </span>
+            </h3>
+            <div class="application-details">
+                <div class="info-item">
+                    <span class="label">Ребенок:</span>
+                    <span class="value">{{ application.child_full_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Возраст:</span>
+                    <span class="value">{{ application.child_age }} лет</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Школа:</span>
+                    <span class="value">{{ application.school_name or '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Смена:</span>
+                    <span class="value">{{ 'Дневная' if application.shift == 'day' else 'Вечерняя' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Занятий в неделю:</span>
+                    <span class="value">{{ application.desired_lessons_per_week }}</span>
+                </div>
+                {% if application.rejection_reason %}
+                <div class="info-item rejection">
+                    <span class="label">Причина отказа:</span>
+                    <span class="value">{{ application.rejection_reason }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>У вас нет активных заявок</p>
+            <button onclick="showApplicationForm()" class="submit-btn">Подать новую заявку</button>
+        </div>
+        {% endif %}
+    </div>
+</main>
+
+<script src="/static/parent.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель тренера - АкваСпорт</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">🏊‍♂️ АкваСпорт - {{ trainer.full_name }}</div>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+</header>
+
+<main class="main">
+    <div class="coach-tabs">
+        <button class="coach-tab-btn active" data-tab="my-groups">👥 Мои группы</button>
+        <button class="coach-tab-btn" data-tab="attendance">📝 Журнал посещаемости</button>
+        <button class="coach-tab-btn" data-tab="schedule">📅 Расписание</button>
+        <button class="coach-tab-btn" data-tab="edit-schedule">✏️ Редактировать расписание</button>
+        <button class="coach-tab-btn" data-tab="applications">📋 Заявки</button>
+    </div>
+
+    <!-- Мои группы -->
+    <div id="my-groups" class="coach-tab-content active">
+        <div class="groups-grid">
+            {% for group in groups %}
+            <div class="group-card">
+                <h3>{{ group.name }}</h3>
+                <div class="group-stats">
+                    <div class="stat">
+                        <span class="stat-label">Возраст:</span>
+                        <span class="stat-value">{{ group.min_age }}-{{ group.max_age }} лет</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Учеников:</span>
+                        <span class="stat-value">{{ group.students_count }}/{{ group.max_students }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Смена:</span>
+                        <span class="stat-value">{{ 'Дневная' if group.shift == 'day' else 'Вечерняя' }}</span>
+                    </div>
+                </div>
+                <button onclick="viewGroupStudents({{ group.id }})" class="small-btn">Список учеников</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Журнал посещаемости -->
+    <div id="attendance" class="coach-tab-content">
+        <div class="controls">
+            <select id="groupSelect" class="group-select">
+                {% for group in groups %}
+                <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" id="attendanceDate" value="{{ today }}">
+            <button id="loadAttendanceBtn" class="small-btn">Загрузить</button>
+        </div>
+        <div class="attendance-journal">
+            <table id="attendanceJournalTable">
+                <thead>
+                    <tr>
+                        <th>Ученик</th>
+                        <th>Статус</th>
+                        <th>Примечание</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceJournalBody">
+                    <tr><td colspan="3">Выберите группу и дату</td></tr>
+                </tbody>
+            </table>
+            <button id="saveAttendanceBtn" class="submit-btn">Сохранить посещаемость</button>
+        </div>
+    </div>
+
+    <!-- Расписание -->
+    <div id="schedule" class="coach-tab-content">
+        <select id="scheduleGroupSelect" class="group-select">
+            {% for group in groups %}
+            <option value="{{ group.id }}">{{ group.name }}</option>
+            {% endfor %}
+        </select>
+        <div id="groupSchedule" class="schedule-list"></div>
+    </div>
+
+    <!-- Редактирование расписания -->
+    <div id="edit-schedule" class="coach-tab-content">
+        <select id="editGroupSelect" class="group-select">
+            {% for group in groups %}
+            <option value="{{ group.id }}">{{ group.name }}</option>
+            {% endfor %}
+        </select>
+
+        <form id="addScheduleForm" class="schedule-form">
+            <h4>Добавить занятие</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>День недели:</label>
+                    <select name="weekday" required>
+                        <option value="0">Понедельник</option>
+                        <option value="1">Вторник</option>
+                        <option value="2">Среда</option>
+                        <option value="3">Четверг</option>
+                        <option value="4">Пятница</option>
+                        <option value="5">Суббота</option>
+                        <option value="6">Воскресенье</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Время начала:</label>
+                    <input type="time" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label>Время окончания:</label>
+                    <input type="time" name="end_time" required>
+                </div>
+                <div class="form-group">
+                    <label>Место:</label>
+                    <input type="text" name="location" placeholder="Дорожка 1">
+                </div>
+            </div>
+            <button type="submit" class="submit-btn">➕ Добавить занятие</button>
+        </form>
+
+        <div id="existingScheduleList" class="existing-schedule"></div>
+    </div>
+
+    <!-- Заявки -->
+    <div id="applications" class="coach-tab-content">
+        <div class="applications-filters">
+            <select id="appStatusFilter">
+                <option value="all">Все</option>
+                <option value="new">Новые</option>
+                <option value="processing">В обработке</option>
+                <option value="approved">Одобренные</option>
+                <option value="rejected">Отклоненные</option>
+            </select>
+            <button id="refreshAppsBtn" class="small-btn">Обновить</button>
+        </div>
+        <div id="applicationsList" class="applications-list"></div>
+    </div>
+</main>
+
+<script src="/static/coach.js"></script>
+</body>
+</html>

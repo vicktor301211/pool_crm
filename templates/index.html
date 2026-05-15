@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АкваСпорт - Система управления бассейном</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">
+        <img src="/static/images/pool.png" alt="АкваСпорт" class="logo-icon">
+        АкваСпорт CRM
+    </div>
+    <div class="header-buttons">
+        <button id="profileBtn" class="icon-btn" style="display: none;">👤 Профиль</button>
+        <button id="logoutBtn" class="logout-btn" style="display: none;">🚪 Выйти</button>
+        <button id="loginBtn" class="login-btn dynamic-btn">Вход</button>
+    </div>
+</header>
+
+<main class="main">
+    <div class="hero-section">
+        <img src="/static/images/pool.png" alt="Бассейн" class="hero-image">
+        <h1>Добро пожаловать в систему управления бассейном</h1>
+        <p class="subtitle">Управление тренировками, успеваемостью и расписанием</p>
+    </div>
+
+    <div class="buttons-grid">
+        <button class="feature-btn dynamic-btn" data-action="schedule" data-img="/static/images/pool.png">
+            <img src="/static/images/pool.png" alt="Расписание" class="btn-icon">
+            📅 Расписание занятий
+            <span class="btn-hint">Нажмите для просмотра</span>
+        </button>
+        <button class="feature-btn dynamic-btn" data-action="trainers" data-img="/static/images/pool.png">
+            <img src="/static/images/pool.png" alt="Тренеры" class="btn-icon">
+            👨‍🏫 Наши тренеры
+            <span class="btn-hint">Нажмите для просмотра</span>
+        </button>
+        <button class="feature-btn dynamic-btn" data-action="groups" data-img="/static/images/pool.png">
+            <img src="/static/images/pool.png" alt="Группы" class="btn-icon">
+            👥 Группы
+            <span class="btn-hint">Нажмите для просмотра</span>
+        </button>
+        <button class="feature-btn dynamic-btn" data-action="applications" data-img="/static/images/add.png">
+            <img src="/static/images/add.png" alt="Заявка" class="btn-icon">
+            📝 Подать заявку
+            <span class="btn-hint">Нажмите для записи</span>
+        </button>
+    </div>
+
+    <div id="dynamicContent" class="dynamic-content">
+        <div class="welcome-message">
+            <img src="/static/images/pool.png" alt="Добро пожаловать" class="welcome-icon">
+            <h3>🏊‍♂️ Добро пожаловать!</h3>
+            <p>Выберите интересующий раздел или войдите в систему для доступа к личному кабинету.</p>
+            <p>Родители могут отслеживать успеваемость и посещаемость детей.</p>
+            <p>Тренеры получают доступ к журналу посещаемости и управлению расписанием.</p>
+        </div>
+    </div>
+</main>
+
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <img id="modalImage" src="" alt="Изображение">
+        <div id="modalText"></div>
+    </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
