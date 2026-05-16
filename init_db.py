@@ -4,10 +4,8 @@ import os
 from database import db_instance, get_db_cursor, DATABASE_PATH
 from datetime import datetime, time, date, timedelta
 
-
 def table_exists(cursor, table_name):
     # Проверяет, существует ли таблица в базе данных SQLite
-    """Проверяет, существует ли таблица в базе данных"""
     cursor.execute(  #   cursor - курсор SQLite для выполнения запросов
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
         # Обращаемся к системной таблице sqlite_master, где хранится информация о всех объектах БД
@@ -250,29 +248,39 @@ def create_tables():
                 #created_at: Дата и время создания уведомления
 
         # Создание индексов для производительности
+        # 1. Индекс на внешний ключ родителя в таблице children
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_children_parent ON children(parent_id)")
+        # 2. Индекс на ID ребёнка в таблице зачислений
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_enrollments_child ON enrollments(child_id)")
+        # 3. Индекс на ID группы в таблице зачислений
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_enrollments_group ON enrollments(group_id)")
+        # 4. Индекс на ID зачисления в таблице посещаемости
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_attendance_enrollment ON attendance(enrollment_id)")
+        # 5. Индекс на дату в таблице посещаемости
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date)")
+        # 6. Индекс на статус в таблице заявок
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status)")
+        # 7. Индекс на телефон в таблице заявок
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_applications_phone ON applications(parent_phone)")
+        # 8. Индекс на группу в таблице расписания
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_schedule_group ON schedule(group_id)")
+        # 9. Индекс на статус в таблице уведомлений
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status)")
+        # 10. Индекс на тренера в таблице групп
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_groups_trainer ON groups(trainer_id)")
 
         print("✅ All tables created successfully")
 
-
 def ensure_tables_exist():
     """Проверяет существование таблиц и создаёт их при необходимости"""
     with get_db_cursor() as cursor:
+        # ШАГ 1: Проверяем, существует ли ключевая таблица 'trainers'
         if not table_exists(cursor, 'trainers'):
+            # ШАГ 2: Если таблицы нет - создаём все таблицы
             print("📋 Tables not found, creating them first...")
-            create_tables()
-            return True
-    return False
-
+            create_tables()  # Вызываем функцию создания всех таблиц
+            return True      # Возвращаем True, так как таблицы созданы
+    return False  # Таблицы уже существовали
 
 def seed_test_data():
     """Заполнение тестовыми данными для разработки"""
@@ -284,15 +292,18 @@ def seed_test_data():
         # Проверяем, есть ли уже данные
         try:
             cursor.execute("SELECT COUNT(*) FROM trainers")
-            count = cursor.fetchone()[0]
-            if count > 0:
+            count = cursor.fetchone()[0]  # Получаем число из первой колонки первой строки
+            if count > 0:  # Если в таблице trainers уже есть данные (>0)
                 print("📊 Test data already exists, skipping seed")
-                return
+                return  # Выходим из функции, ничего не делаем (данные уже есть)
         except sqlite3.OperationalError as e:
+            # Обрабатываем ошибку "no such table" (нет такой таблицы)
             if "no such table" in str(e):
+                # Это защитный случай: после ensure_tables_exist() такого быть не должно
                 print("❌ Tables still don't exist, cannot seed data")
                 print("   Please run 'create_tables()' first or use 'reset_database()'")
                 return
+            # Если другая ошибка - пробрасываем её дальше
             raise e
 
         print("🌱 Seeding test data...")
@@ -301,8 +312,8 @@ def seed_test_data():
         # В реальном проекте используйте bcrypt!
         test_password_hash = "test_hash_replace_with_bcrypt"
 
-        # 1. Создаём тренеров
-        trainers_data = [
+        # 1. Создаём тренеров (trainers)
+        trainers_data = [ # (full_name, phone, email, login, password_hash, specialization)
             ("Анна Иванова", "+79001234567", "anna@swim.ru", "anna.trainer", test_password_hash,
              "Детское плавание, начальная подготовка"),
             ("Михаил Петров", "+79007654321", "mikhail@swim.ru", "mikhail.trainer", test_password_hash,
@@ -316,8 +327,8 @@ def seed_test_data():
             VALUES (?, ?, ?, ?, ?, ?)
         """, trainers_data)
 
-        # 2. Создаём группы
-        groups_data = [
+        # 2. Создаём группы (groups)
+        groups_data = [ # (name, trainer_id, min_age, max_age, swimming_year, max_students, shift)
             ("Дельфинчики (3-5 лет)", 1, 3, 5, 1, 10, "day"),
             ("Рыбки (6-8 лет)", 1, 6, 8, 1, 12, "day"),
             ("Спортивная (9-12 лет)", 2, 9, 12, 2, 15, "evening"),
@@ -330,8 +341,8 @@ def seed_test_data():
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, groups_data)
 
-        # 3. Создаём родителей
-        parents_data = [
+        # 3. Создаём родителей (parents)
+        parents_data = [ # (full_name, phone, email, vk_id)
             ("Сергей Петров", "+79123456789", "sergey@example.com", None),
             ("Ольга Сидорова", "+79234567890", "olga@example.com", None),
             ("Дмитрий Козлов", "+79345678901", "dmitry@example.com", None),
@@ -342,8 +353,9 @@ def seed_test_data():
             VALUES (?, ?, ?, ?)
         """, parents_data)
 
-        # 4. Создаём детей
-        children_data = [
+        # 4. Создаём детей (children)
+        children_data = [ # (parent_id, full_name, age, class_number,
+                                # school_name, swimming_years, shift, desired_lessons_per_week)
             (1, "Алексей Петров", 7, 1, "Школа №1", 1, "day", 2),
             (1, "Мария Петрова", 5, 0, "Детский сад №5", 1, "day", 2),
             (2, "Екатерина Сидорова", 10, 3, "Школа №2", 2, "evening", 3),
@@ -355,12 +367,12 @@ def seed_test_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, children_data)
 
-        # 5. Зачисляем детей в группы
-        enrollments_data = [
-            (1, 2),  # Алексей Петров -> Рыбки
-            (2, 1),  # Мария Петрова -> Дельфинчики
-            (3, 3),  # Екатерина Сидорова -> Спортивная
-            (4, 4),  # Иван Козлов -> Продвинутая
+        # 5. Зачисляем детей в группы (enrollments)
+        enrollments_data = [ # Связываем детей (child_id) с группами (group_id)
+            (1, 2),  # Алексей Петров(id=1) -> Рыбки (id=2)
+            (2, 1),  # Мария Петрова(id=2) -> Дельфинчики (id=1)
+            (3, 3),  # Екатерина Сидорова(id=3) -> Спортивная (id=3)
+            (4, 4),  # Иван Козлов(id=4) -> Продвинутая (id=4)
         ]
 
         cursor.executemany("""
@@ -368,7 +380,7 @@ def seed_test_data():
             VALUES (?, ?)
         """, enrollments_data)
 
-        # 6. Добавляем расписание
+        # 6. Добавляем расписание (schedule)
         schedule_data = [
             (1, 0, "10:00", "11:00", "Дорожка 1", 1, None),  # ПН, Дельфинчики
             (1, 2, "10:00", "11:00", "Дорожка 1", 1, None),  # СР, Дельфинчики
@@ -385,41 +397,45 @@ def seed_test_data():
         cursor.executemany("""
             INSERT INTO schedule (group_id, weekday, start_time, end_time, location, is_recurring, single_date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, schedule_data)
+        """, schedule_data)  #weekday: 0=пн, 1=вт, 2=ср, 3=чт, 4=пт, 5=сб, 6=вс
 
-        # 7. Добавляем посещаемость за последнюю неделю
-        attendance_data = []
-        today = date.today()
+        # 7. Добавляем посещаемость за последнюю неделю (attendance)
+        attendance_data = []  # Создаём отметки посещаемости за последнюю неделю
+        today = date.today()  # Сегодняшняя дата (например, 2025-05-04)
+        # Перебираем зачисления (каждого ученика)
+        # enumerate(...) даёт номер (1,2,3,4) для enrollment_id
         for i, enrollment in enumerate([(1, 2), (2, 1), (3, 3), (4, 4)], start=1):
             child_id, group_id = enrollment
             enrollment_id = i
 
-            # Последние 3 занятия
+            # Для каждого ученика создаём 3 отметки: вчера, 3 дня назад, 5 дней назад
             for days_ago in [1, 3, 5]:  # вчера, 3 дня назад, 5 дней назад
-                d = today - timedelta(days=days_ago)
+                d = today - timedelta(days=days_ago)  # Вычисляем дату
+                # status = "present" если не 5 дней назад, иначе "absent"
                 status = "present" if days_ago != 5 else "absent"  # для примера
                 attendance_data.append((enrollment_id, d, status))
-
+        # Вставляем все отметки посещаемости
         cursor.executemany("""
             INSERT INTO attendance (enrollment_id, date, status)
             VALUES (?, ?, ?)
         """, attendance_data)
 
-        # 8. Добавляем тестовые заявки
+        # 8. Добавляем тестовые заявки (applications)
+        # Создаём тестовые заявки от родителей (ещё не обработанные)
         applications_data = [
+            # Новая заявка (status='new')
             ("Нина Соколова", "+79991112233", "nina@example.com", "Артём Соколов", 8, 2, "Школа №4", 1, "day", 2, "new",
              None, None, None),
-            (
-                "Виктор Морозов", "+79885556677", None, "Дарья Морозова", 6, 0, "Школа №5", 1, "day", 2, "processing",
-                None,
-                None, None),
+            # Заявка в обработке (status='processing')
+            ("Виктор Морозов", "+79885556677", None, "Дарья Морозова", 6, 0, "Школа №5", 1, "day", 2, "processing",
+             None, None, None),
         ]
 
         cursor.executemany("""
             INSERT INTO applications (parent_full_name, parent_phone, parent_email, child_full_name, child_age, child_class, school_name, swimming_years, shift, desired_lessons_per_week, status, rejection_reason, processed_at, processed_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, applications_data)
-
+        # 9: Выводим количество записей в каждой таблице
         print("✅ Test data seeded successfully")
         print(f"📊 Statistics:")
         print(f"   - Trainers: {cursor.execute('SELECT COUNT(*) FROM trainers').fetchone()[0]}")
@@ -428,41 +444,34 @@ def seed_test_data():
         print(f"   - Children: {cursor.execute('SELECT COUNT(*) FROM children').fetchone()[0]}")
         print(f"   - Enrollments: {cursor.execute('SELECT COUNT(*) FROM enrollments').fetchone()[0]}")
 
-
 def drop_all_tables():
-    """
-    Удаляет ВСЕ таблицы из базы данных (без пересоздания)
-    Полезно для чистого сброса перед миграциями
-    """
+    #Удаляет ВСЕ таблицы из базы данных (без пересоздания)
     with get_db_cursor() as cursor:
-        # Получаем список всех таблиц (исключая системные)
+        # ЧАСТЬ 1: ПОЛУЧЕНИЕ СПИСКА ВСЕХ ТАБЛИЦ
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-        tables = cursor.fetchall()
-
+        tables = cursor.fetchall()  # Получаем список всех таблиц
+        # ЧАСТЬ 2: ПРОВЕРКА, ЕСТЬ ЛИ ТАБЛИЦЫ
         if not tables:
             print("ℹ️ No tables found to drop")
-            return
+            return  # Выходим, если таблиц нет
 
-        # Отключаем проверку внешних ключей временно
+        # ЧАСТЬ 3: ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ ВНЕШНИХ КЛЮЧЕЙ
         cursor.execute("PRAGMA foreign_keys = OFF")
 
-        # Удаляем каждую таблицу
+        # ЧАСТЬ 4: УДАЛЕНИЕ КАЖДОЙ ТАБЛИЦЫ
         for table in tables:
-            table_name = table[0]
+            table_name = table[0] # Извлекаем имя таблицы из кортежа
+            # DROP TABLE IF EXISTS - удаляем таблицу, если она существует
             cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
             print(f"   Dropped table: {table_name}")
 
-        # Включаем проверку внешних ключей обратно
+        # ЧАСТЬ 5: ВКЛЮЧЕНИЕ ВНЕШНИХ КЛЮЧЕЙ ОБРАТНО
         cursor.execute("PRAGMA foreign_keys = ON")
 
     print(f"✅ Dropped {len(tables)} tables successfully")
 
-
 def reset_database():
-    """
-    ПОЛНЫЙ СБРОС БАЗЫ ДАННЫХ (только для разработки!)
-    Удаляет все таблицы и создаёт их заново с тестовыми данными
-    """
+    #Удаляет все таблицы и создаёт их заново с тестовыми данными
     print("🔄 Starting database reset...")
 
     # Удаляем все таблицы
@@ -474,14 +483,8 @@ def reset_database():
 
     print("✅ Database reset completed successfully!")
 
-
 def recreate_database():
-    """
-    Полностью пересоздаёт базу данных:
-    1. Закрывает существующее соединение
-    2. Удаляет файл БД
-    3. Создаёт всё заново
-    """
+    #Полностью пересоздаёт базу данных
     import os
     from database import db_instance, DATABASE_PATH
 
@@ -501,11 +504,8 @@ def recreate_database():
 
     print("✅ Database recreated from scratch!")
 
-
 def reset_database_safe():
-    """
-    Безопасная версия сброса с подтверждением
-    """
+    #Безопасная версия сброса с подтверждением
     response = input("⚠️ WARNING: This will delete ALL data! Type 'yes' to continue: ")
     if response.lower() == 'yes':
         reset_database()
@@ -513,67 +513,63 @@ def reset_database_safe():
     else:
         print("❌ Reset cancelled")
 
-
 def show_tables():
-    """Показать список всех таблиц в базе данных"""
+    # Показать список всех таблиц в базе данных
     with get_db_cursor() as cursor:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
         tables = cursor.fetchall()
-
+        # Проверка, есть ли таблицы
         if not tables:
+            # Если таблиц нет - выводим сообщение и выходим
             print("ℹ️ No tables found")
             return
 
         print("\n📋 Tables in database:")
         print("-" * 30)
+        # Вывод каждой таблицы с кол-вом записей
         for table in tables:
-            # Получаем количество записей в таблице
+            # Получаем кол-во записей в таблице
             cursor.execute(f"SELECT COUNT(*) FROM {table[0]}")
             count = cursor.fetchone()[0]
+            # Выводим таблицу и кол-во записей
             print(f"   {table[0]}: {count} records")
         print("-" * 30)
 
-
 def get_database_info():
-    """Получить подробную информацию о базе данных"""
+    # Получить подробную информацию о базе данных
     import os
     from database import DATABASE_PATH
 
     print("\n📊 Database Information:")
     print("=" * 40)
-
-    # Проверяем существует ли файл БД
-    if os.path.exists(DATABASE_PATH):
-        size = os.path.getsize(DATABASE_PATH)
+    # ПРОВЕРКА СУЩЕСТВОВАНИЯ ФАЙЛА БД
+    if os.path.exists(DATABASE_PATH):  # os.path.exists() - проверяет, существует ли файл на диске
+        size = os.path.getsize(DATABASE_PATH)  # os.path.getsize() - возвращает размер файла в байтах
         print(f"📁 File: {DATABASE_PATH}")
         print(f"💾 Size: {size} bytes ({size / 1024:.2f} KB)")
     else:
         print(f"❌ Database file not found: {DATABASE_PATH}")
         return
 
-    # Показываем таблицы
+    # Покажет список всех таблиц и кол-во записей
     show_tables()
 
     print(f"\n🔧 SQLite version: {sqlite3.sqlite_version}")
     print("=" * 40)
 
-
 def create_full_database():
-    """
-    Создаёт полную базу данных с таблицами и тестовыми данными
-    (удобная функция для быстрого старта)
-    """
+    #Создаёт полную базу данных с таблицами и тестовыми данными
     print("🚀 Creating full database...")
-    create_tables()
-    seed_test_data()
+    create_tables()  # Cоздаёт все 10 таблиц
+    seed_test_data()  # Заполняет таблицы данными
     print("✅ Full database created successfully!")
-
 
 # Если запускаем файл напрямую
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2: # Если аргументов меньше 2 (то есть нет команды)
+        # Выводим справку (help)
         print("\n📚 Database Management Script")
         print("=" * 40)
         print("Usage:")
@@ -586,26 +582,26 @@ if __name__ == "__main__":
         print("  python init_db.py info       - Show database information")
         print("  python init_db.py full       - Create full database (tables + data)")
         print("=" * 40)
-        sys.exit(0)
+        sys.exit(0)# Выходим из программы с кодом 0 (успешное завершение)
 
-    command = sys.argv[1]
+    command = sys.argv[1] # Берём первый аргумент (команду)
 
     if command == "create":
-        create_tables()
+        create_tables() # Создание таблиц
     elif command == "seed":
-        seed_test_data()
+        seed_test_data() # Заполнение тестовыми данными
     elif command == "reset":
-        reset_database()
+        reset_database() # Полный сброс (удаление + создание + заполнение)
     elif command == "drop":
-        drop_all_tables()
+        drop_all_tables() # Удаление всех таблиц
     elif command == "recreate":
-        recreate_database()
+        recreate_database() # Пересоздание с удалением файла
     elif command == "show":
-        show_tables()
+        show_tables() # Показать список таблиц
     elif command == "info":
-        get_database_info()
+        get_database_info() # Показать подробную информацию о БД
     elif command == "full":
-        create_full_database()
-    else:
+        create_full_database() # Создать полную БД (таблицы + данные)
+    else: # Если команда не распознана
         print(f"❌ Unknown command: {command}")
         print("Use: create, seed, reset, drop, recreate, show, info, full")
