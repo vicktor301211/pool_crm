@@ -75,18 +75,9 @@
 * from fastapi import FastAPI, Depends, HTTPException
 ### 2. Класс Database 
 1) def __init__(): Класс для управления подключением к SQLite
-* self.db_path = db_path Сохраняем путь к файлу БД в атрибуте объекта 
-* self._connection = None Инициализируем соединение как None (соединения пока нет)
 2) get_connection(): Создаёт соединение с SQLite при первом запросе
-* if self._connection is None: ПРОВЕРКА: Есть ли уже соединение? 
-* self._connection = sqlite3.connect( СОЗДАЕМ НОВОЕ СОЕДИНЕНИЕ 
-* self.db_path, Путь к файлу БД 
-* check_same_thread=False, Разрешаем использование в разных потоках 
-* detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES Преобразование типов данных)
-* self._connection.execute("PRAGMA foreign_keys = ON") Включаем поддержку внешних ключей (очень важно!)
-* self._connection.row_factory = sqlite3.Row Возвращаем строки как словари для удобства
-* return self._connection
 3) close(): Закрыть соединение с БД
-* if self._connection is not None: Проверяет 
-* self._connection.close() Закрывает соединение с БД 
-* self._connection = None Обнуляем переменную
+### 3. Функции:
+* get_db_cursor() - Автоматически управляет транзакциями
+* get_db() - Используется в эндпоинтах для получения курсора
+* init_database() - Функция для инициализации БД (будет вызвана при старте)
