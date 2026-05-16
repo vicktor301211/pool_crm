@@ -5,19 +5,18 @@ from database import db_instance, get_db_cursor, DATABASE_PATH
 from datetime import datetime, time, date, timedelta
 
 def table_exists(cursor, table_name):
-    # Проверяет, существует ли таблица в базе данных SQLite
-    cursor.execute(  #   cursor - курсор SQLite для выполнения запросов
+    #Проверяет, существует ли таблица в базе данных SQLite
+    cursor.execute(#cursor - курсор SQLite для выполнения запросов
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        # Обращаемся к системной таблице sqlite_master, где хранится информация о всех объектах БД
-        # type='table' - фильтруем только таблицы (исключаем индексы, представления и триггеры)
-        # name=? - параметризованный запрос для защиты от SQL-инъекций
-        (table_name,)  #   table_name - имя таблицы для проверки (строка)
+        #Обращаемся к системной таблице sqlite_master, где хранится информация о всех объектах БД
+        #type='table' - фильтруем только таблицы (исключаем индексы, представления и триггеры)
+        #name=? - параметризованный запрос для защиты от SQL-инъекций
+        (table_name,)  #table_name - имя таблицы для проверки (строка)
     )
     return cursor.fetchone() is not None #True - если таблица существует, False - если таблица не найдена
 
 def create_tables():
-    """Создание всех таблиц согласно схеме"""
-
+    #Создание всех таблиц согласно схеме
     with get_db_cursor() as cursor:
         # 1. Таблица родителей (parents)
         cursor.execute("""
@@ -272,7 +271,7 @@ def create_tables():
         print("✅ All tables created successfully")
 
 def ensure_tables_exist():
-    """Проверяет существование таблиц и создаёт их при необходимости"""
+    #Проверяет существование таблиц и создаёт их при необходимости
     with get_db_cursor() as cursor:
         # ШАГ 1: Проверяем, существует ли ключевая таблица 'trainers'
         if not table_exists(cursor, 'trainers'):
@@ -283,8 +282,7 @@ def ensure_tables_exist():
     return False  # Таблицы уже существовали
 
 def seed_test_data():
-    """Заполнение тестовыми данными для разработки"""
-
+    # Заполнение тестовыми данными для разработки
     # Проверяем, существуют ли таблицы
     ensure_tables_exist()
 
@@ -303,13 +301,13 @@ def seed_test_data():
                 print("❌ Tables still don't exist, cannot seed data")
                 print("   Please run 'create_tables()' first or use 'reset_database()'")
                 return
-            # Если другая ошибка - пробрасываем её дальше
+            #Если другая ошибка - пробрасываем её дальше
             raise e
 
         print("🌱 Seeding test data...")
 
-        # Хеш пароля для тестовых пользователей (пароль: "password123")
-        # В реальном проекте используйте bcrypt!
+        #Хеш пароля для тестовых пользователей (пароль: "password123")
+        #В реальном проекте используйте bcrypt!
         test_password_hash = "test_hash_replace_with_bcrypt"
 
         # 1. Создаём тренеров (trainers)
@@ -445,7 +443,7 @@ def seed_test_data():
         print(f"   - Enrollments: {cursor.execute('SELECT COUNT(*) FROM enrollments').fetchone()[0]}")
 
 def drop_all_tables():
-    #Удаляет ВСЕ таблицы из базы данных (без пересоздания)
+    # Удаляет ВСЕ таблицы из базы данных (без пересоздания)
     with get_db_cursor() as cursor:
         # ЧАСТЬ 1: ПОЛУЧЕНИЕ СПИСКА ВСЕХ ТАБЛИЦ
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
@@ -471,7 +469,7 @@ def drop_all_tables():
     print(f"✅ Dropped {len(tables)} tables successfully")
 
 def reset_database():
-    #Удаляет все таблицы и создаёт их заново с тестовыми данными
+    # Удаляет все таблицы и создаёт их заново с тестовыми данными
     print("🔄 Starting database reset...")
 
     # Удаляем все таблицы
@@ -484,7 +482,7 @@ def reset_database():
     print("✅ Database reset completed successfully!")
 
 def recreate_database():
-    #Полностью пересоздаёт базу данных
+    # Полностью пересоздаёт базу данных
     import os
     from database import db_instance, DATABASE_PATH
 

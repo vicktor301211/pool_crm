@@ -3,10 +3,10 @@ import sqlite3
 from contextlib import contextmanager
 from fastapi import FastAPI, Depends, HTTPException
 
-DATABASE_PATH = "swim_crm.db"  # файл базы данных
+DATABASE_PATH = "swim_crm.db"  # Файл базы данных
 
 class Database:
-    #Класс для управления подключением к SQLite
+    # Класс для управления подключением к SQLite
     def __init__(self, db_path: str = DATABASE_PATH):
         self.db_path = db_path  # Сохраняем путь к файлу БД в атрибуте объекта
         self._connection = None  # Инициализируем соединение как None (соединения пока нет)
@@ -16,7 +16,7 @@ class Database:
             self._connection = sqlite3.connect(  # СОЗДАЕМ НОВОЕ СОЕДИНЕНИЕ
                 self.db_path,  # Путь к файлу БД
                 check_same_thread=False,  # Разрешаем использование в разных потоках
-                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES  #преобразование типов данных
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES  #Преобразование типов данных
             )
             # Включаем поддержку внешних ключей (очень важно!)
             self._connection.execute("PRAGMA foreign_keys = ON")
