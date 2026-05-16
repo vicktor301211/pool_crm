@@ -1,10 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<!-- attendance_mark.html -->
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Журнал посещаемости - Swim CRM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-calendar-check"></i> Журнал посещаемости</h1>
+        <a href="/trainer/group/{{ group_id }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Вернуться к группе
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="date-selector">
+                <form method="get" action="/trainer/group/{{ group_id }}/attendance" class="form-inline">
+                    <label for="date_param" style="margin-right: 10px;"><i class="fas fa-calendar"></i> Дата занятия:</label>
+                    <input type="date" id="date_param" name="date_param" value="{{ date.isoformat() }}">
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-search"></i> Выбрать
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/trainer/group/{{ group_id }}/attendance">
+                <input type="hidden" name="date_str" value="{{ date.isoformat() }}">
+
+                {% if students %}
+                    <div class="table-wrapper">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Ученик</th>
+                                    <th>Присутствовал</th>
+                                    <th>Отсутствовал</th>
+                                    <th>Болел</th>
+                                    <th>Уважительная причина</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td class="student-name">
+                                        <strong><i class="fas fa-user-graduate"></i> {{ student.full_name }}</strong>
+                                    </td>
+                                    <td class="status-option">
+                                        <label class="status-label present" style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                            <input type="radio" name="status_{{ student.id }}" value="present"
+                                                   {% if attendance.get(student.id) == 'present' %}checked{% endif %}>
+                                            <span class="status-present"><i class="fas fa-check"></i> Присутствовал</span>
+                                        </label>
+                                    </td>
+                                    <td class="status-option">
+                                        <label class="status-label absent" style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                            <input type="radio" name="status_{{ student.id }}" value="absent"
+                                                   {% if attendance.get(student.id) == 'absent' %}checked{% endif %}>
+                                            <span class="status-absent"><i class="fas fa-times"></i> Отсутствовал</span>
+                                        </label>
+                                    </td>
+                                    <td class="status-option">
+                                        <label class="status-label sick" style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                            <input type="radio" name="status_{{ student.id }}" value="sick"
+                                                   {% if attendance.get(student.id) == 'sick' %}checked{% endif %}>
+                                            <span class="status-sick"><i class="fas fa-thermometer-high"></i> Болел</span>
+                                        </label>
+                                    </td>
+                                    <td class="status-option">
+                                        <label class="status-label excused" style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                            <input type="radio" name="status_{{ student.id }}" value="excused"
+                                                   {% if attendance.get(student.id) == 'excused' %}checked{% endif %}>
+                                            <span class="status-excused"><i class="fas fa-file-alt"></i> Уважительная причина</span>
+                                        </label>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить отметки
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-users-slash fa-4x"></i>
+                        </div>
+                        <p>В группе нет активных учеников</p>
+                        <a href="/trainer/group/{{ group_id }}/add_student" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Добавить учеников
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+
+            <div class="legend" style="margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 12px;">
+                <h4><i class="fas fa-info-circle"></i> Расшифровка статусов:</h4>
+                <ul style="margin-top: 10px; list-style: none;">
+                    <li style="margin: 5px 0;"><span class="status-present" style="display: inline-block; width: 20px; text-align: center;">✓</span> Присутствовал - ученик был на занятии</li>
+                    <li style="margin: 5px 0;"><span class="status-absent" style="display: inline-block; width: 20px; text-align: center;">✗</span> Отсутствовал - ученик пропустил занятие без уважительной причины</li>
+                    <li style="margin: 5px 0;"><span class="status-sick" style="display: inline-block; width: 20px; text-align: center;">🏥</span> Болел - ученик пропустил занятие по болезни</li>
+                    <li style="margin: 5px 0;"><span class="status-excused" style="display: inline-block; width: 20px; text-align: center;">📝</span> Уважительная причина - пропуск по уважительной причине</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

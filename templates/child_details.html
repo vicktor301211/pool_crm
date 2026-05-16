@@ -1,10 +1,159 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<!-- child_details.html -->
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}{{ child.full_name }} - Карточка ученика - Swim CRM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-child"></i> {{ child.full_name }}</h1>
+        <a href="/parent/profile" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Мои дети
+        </a>
+    </div>
+
+    <div class="child-dashboard">
+        <!-- Информационная карточка -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-info-circle"></i> Информация об ученике</h3>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ child.age }}</div>
+                        <div class="stat-label">лет</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ child.swimming_years }}</div>
+                        <div class="stat-label">лет плавания</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ child.desired_lessons_per_week }}</div>
+                        <div class="stat-label">занятий/неделю</div>
+                    </div>
+                </div>
+
+                <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="info-item">
+                        <label>Класс:</label>
+                        <span>{% if child.class_number and child.class_number > 0 %}{{ child.class_number }} класс{% else %}Детский сад{% endif %}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Школа:</label>
+                        <span>{{ child.school_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Смена:</label>
+                        <span>{% if child.shift == 'day' %}Дневная <i class="fas fa-sun"></i>{% else %}Вечерняя <i class="fas fa-moon"></i>{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Группа -->
+        {% if group %}
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                    <h3><i class="fas fa-users"></i> Текущая группа</h3>
+                </div>
+                <div class="card-body">
+                    <div class="group-info">
+                        <h2 style="color: #2d3748; margin-bottom: 15px;">{{ group.name }}</h2>
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                            <div class="stat-card">
+                                <div class="stat-label">Тренер</div>
+                                <div class="stat-number" style="font-size: 1.2rem;">{{ group.trainer_name }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Смена</div>
+                                <div class="stat-number" style="font-size: 1.2rem;">{% if group.shift == 'day' %}Дневная{% else %}Вечерняя{% endif %}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Дата зачисления</div>
+                                <div class="stat-number" style="font-size: 1rem;">{{ group.enrolled_at[:10] if group.enrolled_at else '—' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Расписание -->
+            {% if schedule %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-week"></i> Расписание занятий</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="schedule-list">
+                            {% set weekdays = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'] %}
+                            {% for item in schedule %}
+                                <div class="schedule-item">
+                                    <div class="schedule-day">
+                                        <i class="fas fa-calendar-day"></i> {{ weekdays[item.weekday] }}
+                                    </div>
+                                    <div class="schedule-time">
+                                        <i class="fas fa-clock"></i> {{ item.start_time[:5] }} - {{ item.end_time[:5] }}
+                                    </div>
+                                    <div class="schedule-location">
+                                        <i class="fas fa-map-marker-alt"></i> {{ item.location or 'Дорожка не указана' }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Посещаемость -->
+            {% if attendance %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Посещаемость (последние 30 дней)</h3>
+                    </div>
+                    <div class="card-body">
+                        {% set present_count = attendance|selectattr('status', 'equalto', 'present')|list|length %}
+                        {% set absent_count = attendance|selectattr('status', 'equalto', 'absent')|list|length %}
+                        {% set sick_count = attendance|selectattr('status', 'equalto', 'sick')|list|length %}
+
+                        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #48bb78;">{{ present_count }}</div>
+                                <div class="stat-label">Присутствовал</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #ef4444;">{{ absent_count }}</div>
+                                <div class="stat-label">Отсутствовал</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #ed8936;">{{ sick_count }}</div>
+                                <div class="stat-label">Болел</div>
+                            </div>
+                        </div>
+
+                        <div class="attendance-timeline" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 5px;">
+                            {% for record in attendance[:14] %}
+                                <div class="timeline-day {% if record.status == 'present' %}status-present{% elif record.status == 'absent' %}status-absent{% elif record.status == 'sick' %}status-sick{% else %}status-excused{% endif %}"
+                                     style="padding: 5px 8px; border-radius: 8px; font-size: 0.75rem; text-align: center;"
+                                     title="{{ record.date }}: {% if record.status == 'present' %}Присутствовал{% elif record.status == 'absent' %}Отсутствовал{% elif record.status == 'sick' %}Болел{% else %}Уважительная причина{% endif %}">
+                                    {{ record.date[8:10] }}.{{ record.date[5:7] }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="card">
+                <div class="card-body" style="text-align: center;">
+                    <div class="empty-icon">
+                        <i class="fas fa-question-circle fa-4x" style="color: #ed8936;"></i>
+                    </div>
+                    <p style="font-size: 1.1rem;">Ребёнок пока не зачислен ни в одну группу</p>
+                    <small>После зачисления здесь появится информация о расписании и посещаемости</small>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

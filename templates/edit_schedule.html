@@ -1,10 +1,127 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<!-- edit_schedule.html -->
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Редактирование расписания - Swim CRM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-edit"></i> Редактирование расписания</h1>
+        <a href="/trainer/group/{{ group_id }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Назад к группе
+        </a>
+    </div>
+
+    <!-- Форма добавления занятия -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-plus-circle"></i> Добавить занятие</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" action="/trainer/group/{{ group_id }}/schedule/add" class="schedule-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="weekday"><i class="fas fa-calendar-day"></i> День недели</label>
+                        {% set weekdays = {0: 'Понедельник', 1: 'Вторник', 2: 'Среда', 3: 'Четверг', 4: 'Пятница', 5: 'Суббота', 6: 'Воскресенье'} %}
+                        <select id="weekday" name="weekday" required>
+                            {% for i, day in weekdays.items() %}
+                                <option value="{{ i }}">{{ day }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="start_time"><i class="fas fa-hourglass-start"></i> Время начала</label>
+                        <input type="time" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time"><i class="fas fa-hourglass-end"></i> Время окончания</label>
+                        <input type="time" id="end_time" name="end_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="location"><i class="fas fa-map-marker-alt"></i> Дорожка/Место</label>
+                        <input type="text" id="location" name="location" placeholder="Например: Дорожка 1">
+                    </div>
+                </div>
+
+                <div class="form-check" style="margin: 15px 0;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="is_recurring" name="is_recurring" value="true" checked>
+                        <i class="fas fa-sync-alt"></i> Регулярное занятие (каждую неделю)
+                    </label>
+                </div>
+
+                <div class="form-group single-date-group" style="display: none;">
+                    <label for="single_date"><i class="fas fa-calendar-alt"></i> Дата (для разового занятия)</label>
+                    <input type="date" id="single_date" name="single_date">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить занятие
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список занятий -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-list"></i> Текущее расписание</h2>
+        </div>
+        <div class="card-body">
+            {% if schedule %}
+                <div class="schedule-list">
+                    {% set weekdays = {0: 'Понедельник', 1: 'Вторник', 2: 'Среда', 3: 'Четверг', 4: 'Пятница', 5: 'Суббота', 6: 'Воскресенье'} %}
+                    {% for item in schedule %}
+                        <div class="schedule-item">
+                            <div class="schedule-info" style="flex: 1;">
+                                <span class="schedule-day"><i class="fas fa-calendar-day"></i> {{ weekdays[item.weekday] }}</span>
+                                <span class="schedule-time"><i class="fas fa-clock"></i> {{ item.start_time[:5] }} - {{ item.end_time[:5] }}</span>
+                                <span class="schedule-location"><i class="fas fa-map-marker-alt"></i> {{ item.location or 'Дорожка не указана' }}</span>
+                                {% if not item.is_recurring and item.single_date %}
+                                    <span class="schedule-date"><i class="fas fa-calendar-alt"></i> ({{ item.single_date }})</span>
+                                {% endif %}
+                            </div>
+                            <form method="post" action="/trainer/schedule/{{ item.id }}/delete"
+                                  onsubmit="return confirm('Удалить это занятие из расписания?')">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash-alt"></i> Удалить
+                                </button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-calendar-times fa-4x"></i>
+                    </div>
+                    <p>Расписание пусто</p>
+                    <small>Добавьте первое занятие с помощью формы выше</small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Показывать/скрывать поле single_date в зависимости от is_recurring
+    const checkbox = document.getElementById('is_recurring');
+    const singleDateGroup = document.querySelector('.single-date-group');
+
+    if (checkbox && singleDateGroup) {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                singleDateGroup.style.display = 'none';
+                document.getElementById('single_date').removeAttribute('required');
+            } else {
+                singleDateGroup.style.display = 'block';
+                document.getElementById('single_date').setAttribute('required', 'required');
+            }
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}

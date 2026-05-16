@@ -1,10 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<!-- add_student_to_group.html -->
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Добавление ученика в группу - Swim CRM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-user-plus"></i> Добавление ученика в группу</h1>
+        <a href="/trainer/group/{{ group_id }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Назад к группе
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-users"></i> Доступные ученики</h2>
+            <p>Выберите ученика для зачисления</p>
+        </div>
+        <div class="card-body">
+            {% if children %}
+                <form method="post" action="/trainer/group/{{ group_id }}/add_student">
+                    <div class="children-grid">
+                        {% for child in children %}
+                            <label class="child-card" style="cursor: pointer;">
+                                <input type="radio" name="child_id" value="{{ child.id }}" required style="margin-right: 10px;">
+                                <div style="display: inline-block;">
+                                    <div class="child-name">{{ child.full_name }}</div>
+                                    <div class="child-info">
+                                        <div class="child-info-item">
+                                            <label>Возраст:</label>
+                                            <span>{{ child.age }} лет</span>
+                                        </div>
+                                        <div class="child-info-item">
+                                            <label>Класс:</label>
+                                            <span>{% if child.class_number and child.class_number > 0 %}{{ child.class_number }}{% else %}Детский сад{% endif %}</span>
+                                        </div>
+                                        <div class="child-info-item">
+                                            <label>Школа:</label>
+                                            <span>{{ child.school_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Добавить ученика
+                        </button>
+                        <a href="/trainer/group/{{ group_id }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </div>
+                </form>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-child fa-4x"></i>
+                    </div>
+                    <p>Нет доступных для зачисления учеников</p>
+                    <small>Все ученики уже зачислены в эту группу или нет активных детей в системе</small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
